@@ -1,20 +1,20 @@
 # RISC-V Bare Metal Rust example (with dynamic memory allocation)
 
-This example must be built with nightly `cargo`, and the target `riscv64gc-unknown-none-elf` must be installed to the nightly.
-
-1. `rustup toolchain install nightly`
-2. `rustup +nightly target add riscv64gc-unknown-none-elf`
+The target `riscv64imac-unknown-none-elf` must be installed:
+```
+rustup target add riscv64imac-unknown-none-elf
+```
 
 Build with:
-
+(Note, it doesn't seem to work for debug mode)
 ```
-cargo +nightly build --bin risc-v-rust-bare-metal
+cargo build -r
 ```
 
 Run on QEMU:
 
 ```
-qemu-system-riscv64 -machine virt -bios target/riscv64gc-unknown-none-elf/debug/risc-v-rust-bare-metal -nographic
+qemu-system-riscv64 -machine virt -bios target/riscv64imac-unknown-none-elf/release/risc-v-rust-bare-metal -nographic
 ```
 
 Sample output:
@@ -30,23 +30,26 @@ Ticks: 6
 Ticks: 7
 Ticks: 8
 Ticks: 9
-Ticks: 10
-Ticks: 11
-Ticks: 12
-Ticks: 13
-Ticks: 14
-Ticks: 15
-Ticks: 16
-Ticks: 17
-Ticks: 18
+QEMU: Terminated
 ```
+(Note, you have to manually kill QEMU, usually with Ctrl-a x)
 
-## Problems with output?
-
-I have personally only seen issues if using the dynamically allocated strings sometimes. The version as it is here works on my machine. *Perhaps* there is some problem with the `talc` library and we end up throwing bad bytes at UART and we throw QEMU off. When I remove any references to the dynamic strings, then things work well.
-
-Therefore, if you see any issues with the UART output, try removing all the dynamic strings and maybe get rid of the custom allocator altogether and try again.
+Or using [Simmerv](https://github.com/tommythorn/simmerv):
+```
+sim -c -t -n target/riscv64imac-unknown-none-elf/release/risc-v-rust-bare-metal|head
+    1 3         80000000     3117 auipc   sp, 3000                                      80003000
+    2 3         80000004 e0010113 addi    sp, sp:80003000, fffffffffffffe00             80002e00
+    3 3         80000008   6000ef jal     ra, 8000000e                                  8000000c
+    4 3         8000000e     7171 addi    sp, sp:80002e00, ffffffffffffff50             80002d50
+    5 3         80000010     f506 sd      ra:8000000c, a8(sp:80002d50)
+    6 3         80000012     f122 sd      s0:0, a0(sp:80002d50)
+    7 3         80000014     ed26 sd      s1:0, 98(sp:80002d50)
+    8 3         80000016     e94a sd      s2:0, 90(sp:80002d50)
+    9 3         80000018     e54e sd      s3:0, 88(sp:80002d50)
+   10 3         8000001a     e152 sd      s4:0, 80(sp:80002d50)
+```
 
 ## Article
 
-This code is meant to accompany the article at http://popovicu.com/posts/bare-metal-rust-risc-v-with-dynamic-memory
+This code is meant to accompany the article at
+http://popovicu.com/posts/bare-metal-rust-risc-v-with-dynamic-memory
